@@ -10,7 +10,7 @@ import MessageRouter from './Routes/MessageRoutes.js'
 import cors from 'cors'
 const app = express();
 const corsOptions = {
-  origin:  process.env.CORS_ORIGIN || 'http://localhost:3000'
+  origin:'*'
 };
 app.use(cors(corsOptions));
 app.use(express.static('public'))
