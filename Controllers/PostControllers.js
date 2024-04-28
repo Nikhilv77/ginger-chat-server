@@ -11,7 +11,6 @@ export const getAllPosts = async (req, res) => {
 
 export const getUserPosts = async(req,res)=>{
   const userId = req.params.id;
-  console.log(userId);
   try {
     const posts = await postModel.find({userId:userId}).sort({createdAt:-1});
     res.status(200).json(posts);
@@ -131,7 +130,8 @@ export const dislikePost = async (req, res) => {
   const postId = req.params.id;
   try {
     const post = await postModel.findById(postId);
-    const sortedComments = post.comments.sort((a, b) => b.date - a.date);
+    const sortedComments = post.comments.sort((a, b) => new Date(b.date) - new Date(a.date));
+
     res.status(200).json(sortedComments);
   } catch (error) {
     res.status(500).json({message:error.message})
@@ -139,12 +139,11 @@ export const dislikePost = async (req, res) => {
  }
 
  export const makeComment = async(req,res)=>{
-  console.log("make comment");
   const postId = req.params.id;
-  const {userName,comment,date} = req.body;
+  const {userId,userName,comment,date,userProfilePicture} = req.body;
   try {
     const post = await postModel.findByIdAndUpdate(postId,{
-      $push:{comments:{userName,comment,date}}
+      $push:{comments:{userId,userProfilePicture,userName,comment,date}}
     },{new:true});
     const sortedComments = post.comments.sort((a, b) => b.date - a.date);
     res.status(200).json(sortedComments);

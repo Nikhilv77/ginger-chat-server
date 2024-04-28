@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon server.js"
-  },
+    "start": "pm2 start server.js --name gingerchat-server"
+},
   "author": "Nikhil",
   "license": "ISC",
   "dependencies": {
@@ -17,6 +17,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.1.1",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.13",
     "nodemon": "^3.0.3"
   }
 }
