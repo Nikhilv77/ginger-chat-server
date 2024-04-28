@@ -9,7 +9,10 @@ import chatRouter from './Routes/ChatRoutes.js'
 import MessageRouter from './Routes/MessageRoutes.js'
 import cors from 'cors'
 const app = express();
-app.use(cors())
+const corsOptions = {
+  origin:  process.env.CORS_ORIGIN || 'http://localhost:3000'
+};
+app.use(cors(corsOptions));
 app.use(express.static('public'))
 app.use('/images',express.static('images'))
 app.use(express.json({limit:'20mb',extended:true}))
