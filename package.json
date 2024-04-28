@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "pm2 start server.js --name gingerchat-server"
+    "start": "node server.js"
 },
   "author": "Nikhil",
   "license": "ISC",
