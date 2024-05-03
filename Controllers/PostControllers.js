@@ -130,7 +130,7 @@ export const dislikePost = async (req, res) => {
   const postId = req.params.id;
   try {
     const post = await postModel.findById(postId);
-    const sortedComments = post.comments.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const sortedComments = post.comments;
 
     res.status(200).json(sortedComments);
   } catch (error) {
