@@ -13,4 +13,5 @@ router.put('/:id/dislike', dislikePost);
 router.get('/:id/comments',getComments);
 router.post('/:id/make-comment',makeComment);
 
+// Export the router
 export default router;
