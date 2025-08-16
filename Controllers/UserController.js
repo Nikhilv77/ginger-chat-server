@@ -174,19 +174,25 @@ try {
 export const updateUser = async (req, res) => {
   const id = req.params.id;
   const { name, userName, residence, about, image } = req.body;
+
   try {
     let user = await userModel.findById(id);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
     if (name) user.name = name;
     if (userName) user.userName = userName;
     if (residence) user.residence = residence;
     if (about) user.about = about;
-    if (image) user.profilePicture = image;
-    user = await user.save();
 
+    // ✅ Normalize profile picture input
+    // - If `image` is a full URL (Supabase), save it as is
+    // - If `image` is a filename/key, convert to public Supabase URL
+    // - If `image` is an empty string, clear the picture
+    if (image !== undefined) {
+      user.profilePicture = image === "" ? null : toSupabasePublicUrl(image);
+    }
+
+    user = await user.save();
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -206,6 +212,20 @@ export const deleteUser = async(req,res)=>{
     res.status(500).json({message:error.message})
   }
 }
+
+// helpers/images.js (or put at top of your controller file)
+const isAbsoluteUrl = (v = "") => /^https?:\/\//i.test(v);
+
+// If `val` is a bare filename/key, convert to Supabase public URL.
+// If it’s already a URL, return as-is. If falsy, return as-is.
+export const toSupabasePublicUrl = (val) => {
+  if (!val || isAbsoluteUrl(val)) return val;
+  // Treat `val` as the object key used when uploading to the bucket
+  // e.g. "images/1727843445_name.jpg" or just "1727843445_name.jpg"
+  const key = encodeURIComponent(val);
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.SUPABASE_BUCKET}/${key}`;
+};
+
 
 // export const followUser = async(req,res)=>{
 //   const id = req.params.id;

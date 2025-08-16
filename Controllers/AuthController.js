@@ -9,6 +9,15 @@ const transportMail = nodemailer.createTransport({
     pass: "xrektseciylzhysw",
   },
 });
+// helpers/images.js
+const isAbsoluteUrl = (v = "") => /^https?:\/\//i.test(v);
+
+export const toSupabasePublicUrl = (val) => {
+  if (!val) return val;                 // null/undefined/"" -> keep as is
+  if (isAbsoluteUrl(val)) return val;   // already a URL -> keep
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.SUPABASE_BUCKET}/${encodeURIComponent(val)}`;
+};
+
 export const updatePassword = async(req,res)=>{
   const{email} = req.body;
   const {password} = req.body;
@@ -22,33 +31,47 @@ export const updatePassword = async(req,res)=>{
   }
 }
 
-export const signup = async (req,res)=>{
-const {userName,password,email,name,city,about,image} = req.body;
-let emailLowerCase = email.toLowerCase();
-const salt = await bcrypt.genSalt(10);
-const encryptedPassword = await bcrypt.hash(password,salt)
+export const signup = async (req, res) => {
+  const { userName, password, email, name, city, about, image } = req.body;
 
-try { 
-  const newUser = new userModel({
-    email:emailLowerCase,
-    name:name, 
-    userName:userName,
-    password:encryptedPassword,
-   profilePicture:image,
-   residence:city,
-    about:about
-  })
-  const ExistingUser = await userModel.findOne({$or : [{email:emailLowerCase},{userName:userName}]});
-  if(ExistingUser){
-    return res.status(400).json({message:'User already exists'});
+  const emailLowerCase = (email || '').toLowerCase().trim();
+  const salt = await bcrypt.genSalt(10);
+  const encryptedPassword = await bcrypt.hash(password, salt);
+
+  try {
+    const existingUser = await userModel.findOne({
+      $or: [{ email: emailLowerCase }, { userName }],
+    });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // ✅ Normalize the incoming image (filename -> Supabase public URL)
+    const normalizedPicture =
+      image === '' || image == null ? null : toSupabasePublicUrl(image);
+
+    const newUser = new userModel({
+      email: emailLowerCase,
+      name,
+      userName,
+      password: encryptedPassword,
+      profilePicture: normalizedPicture, // <-- save URL or null
+      residence: city,
+      about,
+    });
+
+    const savedUser = await newUser.save();
+    const token = jwt.sign(
+      { userName: savedUser.userName, id: savedUser._id },
+      process.env.JWTSECRETKEY,
+      { expiresIn: '1h' }
+    );
+
+    res.status(200).json({ savedUser, token });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-const savedUser =   await newUser.save();
-const token = jwt.sign({userName:savedUser.userName, id:savedUser._id},process.env.JWTSECRETKEY,{expiresIn:'1hr'})
-  res.status(200).json({savedUser,token})
-} catch (error) {
-  res.status(500).json({message:error.message})
-}
-}
+};
 
 export const login = async(req,res)=>{
   const{email,password} = req.body;

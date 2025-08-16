@@ -18,23 +18,7 @@ export const getUserPosts = async(req,res)=>{
     res.status(500).json({message:error.message})
   }
 }
-export const createPost = async(req,res)=>{
-const{userId,userName,image,description} = req.body;
-try {
-  const post = new postModel({
-    userId,
-    userName,
-    image,
-    likes:[],
-    comments:[],
-    description
-  })
-  await post.save();
-  res.status(200).json(post);
-} catch (error) {
-  res.status(500).json({message:error.message})
-}
-}
+
 
 //delete
 export const deletePost = async(req,res)=>{
@@ -60,22 +44,46 @@ export const getPost = async(req,res)=>{
   }
 }
 
-//updateposts
-export const updatePost = async(req,res)=>{
-const postId = req.params.id;
-const {userId} = req.body;
-try {
-  const post = await postModel.findById(postId);
-  if(post.userId === userId){
-await post.updateOne({$set:req.body});
-res.status(200).json({post});
-  }else{
-    res.status(403).json({message:`You can not update other person's post`})
+
+export const createPost = async (req, res) => {
+  const { userId, userName, image, description } = req.body;
+  try {
+    const post = new postModel({
+      userId,
+      userName,
+      image: toPublicUrlIfFilename(image),
+      likes: [],
+      comments: [],
+      description,
+    });
+    await post.save();
+    res.status(200).json(post);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-} catch (error) {
-  res.status(500).json({message:error.message})
-}
-}
+};
+
+export const updatePost = async (req, res) => {
+  const postId = req.params.id;
+  const { userId } = req.body;
+  try {
+    const post = await postModel.findById(postId);
+    if (post.userId !== userId) {
+      return res.status(403).json({ message: "You can not update other person's post" });
+    }
+
+    const set = { ...req.body };
+    if (typeof set.image === "string") {
+      set.image = toPublicUrlIfFilename(set.image);
+    }
+
+    await post.updateOne({ $set: set });
+    const updated = await postModel.findById(postId);
+    res.status(200).json({ post: updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 export const getLikes = async(req,res)=>{
   const postId = req.params.id;
@@ -151,3 +159,11 @@ export const dislikePost = async (req, res) => {
     res.status(500).json({message:error.message})
   }
  }
+
+const toPublicUrlIfFilename = (val) => {
+  if (!val) return val;
+  const isUrl = /^https?:\/\//i.test(val);
+  if (isUrl) return val;
+  // treat as key/filename uploaded to Supabase
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/${process.env.SUPABASE_BUCKET}/${encodeURIComponent(val)}`;
+};

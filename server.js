@@ -1,5 +1,8 @@
 import express from "express";
 import dotenv from 'dotenv'
+dotenv.config();
+
+
 import mongoose from "mongoose";
 import AuthRoutes from './Routes/AuthRoutes.js'
 import userRoutes from './Routes/UserRoutes.js'
@@ -14,11 +17,10 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.static('public'))
-app.use('/images',express.static('images'))
+// app.use('/images',express.static('images'))
 app.use(express.json({limit:'20mb',extended:true}))
 app.use(express.urlencoded({limit:'20mb',extended:true}));
 
-dotenv.config();
 
 mongoose.connect(process.env.MONGO_URI).then(()=>{
   app.listen(process.env.PORT,()=>{
